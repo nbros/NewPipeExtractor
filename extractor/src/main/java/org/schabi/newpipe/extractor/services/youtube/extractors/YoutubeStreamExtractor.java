@@ -652,20 +652,23 @@ public class YoutubeStreamExtractor extends StreamExtractor {
             JsonObject playerConfig;
 
             // sometimes at random YouTube does not provide the player config,
-            // so just retry the same request three times
-            int attempts = 2;
+            // so just retry the same request multiple times
+            int attempts = 0;
             while (true) {
                 playerConfig = initialAjaxJson.getObject(2).getObject("player", null);
                 if (playerConfig != null) {
                     break;
                 }
-
-                if (attempts <= 0) {
+                if (++attempts >= 10) {
                     throw new ParsingException(
-                            "YouTube did not provide player config even after three attempts");
+                            "YouTube did not provide player config even after several attempts\nfor url:" + url + "\n" + initialAjaxJson.toString());
+                }
+                try {
+                    Thread.sleep(100*attempts);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
                 }
                 initialAjaxJson = getJsonResponse(url, getExtractorLocalization());
-                --attempts;
             }
             initialData = initialAjaxJson.getObject(3).getObject("response");
 
